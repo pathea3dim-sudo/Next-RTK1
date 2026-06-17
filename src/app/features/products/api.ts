@@ -1,18 +1,23 @@
-import { ProductResponse, ProductType } from "@/lib/ecommerce/product";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { Product } from "../../types/product";   // adjust path if needed
 
-export const ecommerceApi=createApi({
-    reducerPath: "ecommerce",
-    baseQuery: fetchBaseQuery({baseUrl :"https://fakestoreapi.com"}),
-    endpoints:(builder)=>({
-        getAllProduct:builder.query<ProductResponse, {page:number; size:number}>({
-            query:({page, size})=> '/products?page=${page}&size=${size}',
-        }),
-        getSingleProduct:builder.query<ProductType, string>({
-            query:(uuid)=> '/product/${uuid}',
-        }),
+export const ecommerceApi = createApi({
+  reducerPath: 'ecommerceApi',
+  baseQuery: fetchBaseQuery({ baseUrl: 'https://fakestoreapi.com' }),
+  endpoints: (builder) => ({
+    getProducts: builder.query<Product[], void>({
+      query: () => '/products',
+      transformResponse: (raw: Product[]) =>
+        raw.map((p) => ({
+          ...p,
+          slug: p.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, ''),
+        })),
     }),
+  }),
 });
 
-export const {useGetAllProductQuery,useGetSingleProductQuery}=ecommerceApi;
+export const { useGetProductsQuery } = ecommerceApi;

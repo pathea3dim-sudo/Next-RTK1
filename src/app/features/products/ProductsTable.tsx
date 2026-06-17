@@ -1,127 +1,13 @@
-// import {
-//   Table,
-//   TableBody,
-//   TableCaption,
-//   TableCell,
-//   TableFooter,
-//   TableHead,
-//   TableHeader,
-//   TableRow,
-// } from "@/components/ui/table"
-
-
-// import {
-//   Pagination,
-//   PaginationContent,
-//   PaginationEllipsis,
-//   PaginationItem,
-//   PaginationLink,
-//   PaginationNext,
-//   PaginationPrevious,
-// } from "../../../components/ui/pagination"
-
-
-// import {
-//   Select,
-//   SelectContent,
-//   SelectGroup,
-//   SelectItem,
-//   SelectLabel,
-//   SelectTrigger,
-//   SelectValue,
-// } from "@/components/ui/select"
-
-
-
-
-// const invoices = [
-//   {
-//     invoice: "INV001",
-//     paymentStatus: "Paid",
-//     totalAmount: "$250.00",
-//     paymentMethod: "Credit Card",
-//   },
-//   {
-//     invoice: "INV002",
-//     paymentStatus: "Pending",
-//     totalAmount: "$150.00",
-//     paymentMethod: "PayPal",
-//   },
-//   {
-//     invoice: "INV003",
-//     paymentStatus: "Unpaid",
-//     totalAmount: "$350.00",
-//     paymentMethod: "Bank Transfer",
-//   },
-//   {
-//     invoice: "INV004",
-//     paymentStatus: "Paid",
-//     totalAmount: "$450.00",
-//     paymentMethod: "Credit Card",
-//   },
-//   {
-//     invoice: "INV005",
-//     paymentStatus: "Paid",
-//     totalAmount: "$550.00",
-//     paymentMethod: "PayPal",
-//   },
-//   {
-//     invoice: "INV006",
-//     paymentStatus: "Pending",
-//     totalAmount: "$200.00",
-//     paymentMethod: "Bank Transfer",
-//   },
-//   {
-//     invoice: "INV007",
-//     paymentStatus: "Unpaid",
-//     totalAmount: "$300.00",
-//     paymentMethod: "Credit Card",
-//   },
-// ]
-
-// export function ProductsTablez() {
-//   return (
-//     <Table>
-//       <TableCaption>A list of your recent invoices.</TableCaption>
-//       <TableHeader>
-//         <TableRow>
-//           <TableHead className="w-[100px]">Invoice</TableHead>
-//           <TableHead>Status</TableHead>
-//           <TableHead>Method</TableHead>
-//           <TableHead className="text-right">Amount</TableHead>
-//         </TableRow>
-//       </TableHeader>
-//       <TableBody>
-//         {invoices.map((invoice) => (
-//           <TableRow key={invoice.invoice}>
-//             <TableCell className="font-medium">{invoice.invoice}</TableCell>
-//             <TableCell>{invoice.paymentStatus}</TableCell>
-//             <TableCell>{invoice.paymentMethod}</TableCell>
-//             <TableCell className="text-right">{invoice.totalAmount}</TableCell>
-//           </TableRow>
-//         ))}
-//       </TableBody>
-//       <TableFooter>
-//         <TableRow>
-//           <TableCell colSpan={3}>Total</TableCell>
-//           <TableCell className="text-right">$2,500.00</TableCell>
-//         </TableRow>
-//       </TableFooter>
-//     </Table>
-//   )
-// }
-
-
 
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useGetProductsQuery } from './api';
+import { Product } from '../../types/product';
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -135,6 +21,12 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -143,54 +35,46 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import Image from 'next/image';
 
-const invoices = [
-  { invoice: 'INV001', paymentStatus: 'Paid', totalAmount: 250, paymentMethod: 'Credit Card' },
-  { invoice: 'INV002', paymentStatus: 'Pending', totalAmount: 150, paymentMethod: 'PayPal' },
-  { invoice: 'INV003', paymentStatus: 'Unpaid', totalAmount: 350, paymentMethod: 'Bank Transfer' },
-  { invoice: 'INV004', paymentStatus: 'Paid', totalAmount: 450, paymentMethod: 'Credit Card' },
-  { invoice: 'INV005', paymentStatus: 'Paid', totalAmount: 550, paymentMethod: 'PayPal' },
-  { invoice: 'INV006', paymentStatus: 'Pending', totalAmount: 200, paymentMethod: 'Bank Transfer' },
-  { invoice: 'INV007', paymentStatus: 'Unpaid', totalAmount: 300, paymentMethod: 'Credit Card' },
-  // Add more to test pagination
-];
+type SortOption = 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc';
 
-type SortOption = 'status-asc' | 'status-desc' | 'amount-asc' | 'amount-desc';
-
-export function ProductsTable() {
+export default function ProductsTable() {
+  const { data: products = [], isLoading, error } = useGetProductsQuery();
   const [page, setPage] = useState(1);
-  const size = 3; // items per page
+  const size = 5;
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState<SortOption>('status-asc');
+  const [sortBy, setSortBy] = useState<SortOption>('name-asc');
 
-  // --- Client‑side filtering (search across all fields) ---
+  // Filter across all fields
   const filtered = useMemo(() => {
-    if (!search.trim()) return invoices;
+    if (!search.trim()) return products;
     const q = search.toLowerCase().trim();
-    return invoices.filter((inv) =>
-      Object.values(inv).some((val) =>
+    return products.filter((p) =>
+      Object.values(p).some((val) =>
         String(val).toLowerCase().includes(q)
       )
     );
-  }, [search]);
+  }, [products, search]);
 
-  // --- Client‑side sorting ---
+  // Sort
   const sorted = useMemo(() => {
     const copy = [...filtered];
     switch (sortBy) {
-      case 'status-asc':
-        return copy.sort((a, b) => a.paymentStatus.localeCompare(b.paymentStatus));
-      case 'status-desc':
-        return copy.sort((a, b) => b.paymentStatus.localeCompare(a.paymentStatus));
-      case 'amount-asc':
-        return copy.sort((a, b) => a.totalAmount - b.totalAmount);
-      case 'amount-desc':
-        return copy.sort((a, b) => b.totalAmount - a.totalAmount);
+      case 'name-asc':
+        return copy.sort((a, b) => a.title.localeCompare(b.title));
+      case 'name-desc':
+        return copy.sort((a, b) => b.title.localeCompare(a.title));
+      case 'price-asc':
+        return copy.sort((a, b) => a.price - b.price);
+      case 'price-desc':
+        return copy.sort((a, b) => b.price - a.price);
       default:
         return copy;
     }
   }, [filtered, sortBy]);
 
+  // Paginate
   const totalItems = sorted.length;
   const totalPages = Math.ceil(totalItems / size);
   const safePage = Math.min(page, totalPages || 1);
@@ -201,16 +85,30 @@ export function ProductsTable() {
     if (newPage >= 1 && newPage <= totalPages) setPage(newPage);
   };
 
-  const totalAmountSum = paginated.reduce((sum, inv) => sum + inv.totalAmount, 0);
+  // Modal
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleRowClick = (product: Product) => {
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+  };
+
+  if (isLoading) {
+    return <div className="p-8 text-center">Loading products...</div>;
+  }
+  if (error) {
+    return <div className="p-8 text-center text-red-500">Failed to load products.</div>;
+  }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="container mx-auto p-6 max-w-6xl">
       {/* Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold">Invoices</h1>
+        <h1 className="text-2xl font-bold">Products</h1>
         <div className="flex flex-wrap gap-3 w-full sm:w-auto">
           <Input
-            placeholder="Search invoices..."
+            placeholder="Search all fields..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -229,10 +127,10 @@ export function ProductsTable() {
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="status-asc">Status ↑</SelectItem>
-              <SelectItem value="status-desc">Status ↓</SelectItem>
-              <SelectItem value="amount-asc">Amount ↑</SelectItem>
-              <SelectItem value="amount-desc">Amount ↓</SelectItem>
+              <SelectItem value="name-asc">Name ↑</SelectItem>
+              <SelectItem value="name-desc">Name ↓</SelectItem>
+              <SelectItem value="price-asc">Price ↑</SelectItem>
+              <SelectItem value="price-desc">Price ↓</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -241,39 +139,54 @@ export function ProductsTable() {
       {/* Table */}
       <div className="border rounded-lg shadow-sm">
         <Table>
-          <TableCaption>A list of your recent invoices.</TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[100px]">Invoice</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Method</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
+              <TableHead className="w-16">#</TableHead>
+              <TableHead className="w-16">Image</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead className="w-32">Category</TableHead>
+              <TableHead className="w-28">Price</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                  No invoices found
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  No products found
                 </TableCell>
               </TableRow>
             ) : (
-              paginated.map((inv) => (
-                <TableRow key={inv.invoice}>
-                  <TableCell className="font-medium">{inv.invoice}</TableCell>
-                  <TableCell>{inv.paymentStatus}</TableCell>
-                  <TableCell>{inv.paymentMethod}</TableCell>
-                  <TableCell className="text-right">${inv.totalAmount.toFixed(2)}</TableCell>
+              paginated.map((product, idx) => (
+                <TableRow
+                  key={product.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleRowClick(product)}
+                >
+                  <TableCell>{start + idx + 1}</TableCell>
+                  <TableCell>
+                    <Image
+                      src={product.image}
+                      alt={product.title}
+                      width={48}
+                      height={48}
+                      className="object-contain rounded-md bg-muted p-1"
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium truncate max-w-xs">
+                    {product.title}
+                  </TableCell>
+                  <TableCell>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs capitalize">
+                      {product.category}
+                    </span>
+                  </TableCell>
+                  <TableCell className="font-semibold text-blue-600">
+                    ${product.price.toFixed(2)}
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
-          <TableFooter>
-            <TableRow>
-              <TableCell colSpan={3}>Subtotal (current page)</TableCell>
-              <TableCell className="text-right">${totalAmountSum.toFixed(2)}</TableCell>
-            </TableRow>
-          </TableFooter>
         </Table>
       </div>
 
@@ -334,6 +247,48 @@ export function ProductsTable() {
           </Pagination>
         </div>
       )}
+
+      {/* Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Product Details</DialogTitle>
+          </DialogHeader>
+          {selectedProduct && (
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                <Image
+                  src={selectedProduct.image}
+                  alt={selectedProduct.title}
+                  width={200}
+                  height={200}
+                  className="object-contain h-48 w-auto"
+                />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">{selectedProduct.title}</h3>
+                <p className="text-sm text-muted-foreground">{selectedProduct.description}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="font-medium">Category</span>
+                  <p className="capitalize">{selectedProduct.category}</p>
+                </div>
+                <div>
+                  <span className="font-medium">Price</span>
+                  <p className="text-blue-600 font-bold">${selectedProduct.price.toFixed(2)}</p>
+                </div>
+                <div className="col-span-2">
+                  <span className="font-medium">Slug</span>
+                  <p className="text-xs text-muted-foreground font-mono truncate">
+                    {selectedProduct.slug}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

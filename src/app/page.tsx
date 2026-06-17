@@ -1,7 +1,7 @@
 import Image from "next/image";
-import { ProductsTable } from "./features/products/ProductsTable";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import ProductsTable from "./features/products/ProductsTable";
 
 export default function Home() {
   return (
@@ -9,7 +9,8 @@ export default function Home() {
     {/* header  */}
     <Navbar/>
 
-    <ProductsTable/>
+<ProductsTable/>
+    
 
     {/* footer  */}
     <Footer/>

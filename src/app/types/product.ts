@@ -9,5 +9,5 @@ export interface Product {
     category:string;
     description:string;
     image: string;
-    slug?:string;
+    slug:string;
 }
